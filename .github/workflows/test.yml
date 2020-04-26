@@ -2,16 +2,13 @@ name: Docker Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master ]  
   pull_request:
     branches: [ master ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Build the Docker image
@@ -19,7 +16,6 @@ jobs:
         docker-compose build
         docker-compose pull
         docker ps -a
-        
     - name: Run Tests
       run: | 
         docker-compose up -d zookeeper kafka

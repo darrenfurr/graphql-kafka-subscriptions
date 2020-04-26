@@ -1,5 +1,5 @@
 {
-  "name": "graphql-kafka-subscriptions",
+  "name": "@fmannhardt/graphql-kafka-subscriptions",
   "version": "0.4.0",
   "description": "Apollo graphql subscription over Kafka protocol",
   "main": "dist/index.js",
@@ -15,7 +15,7 @@
   ],  
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ancashoria/graphql-kafka-subscriptions.git"
+    "url": "git+https://github.com/fmannhardt/graphql-kafka-subscriptions.git"
   },
   "keywords": [
     "graphql",
@@ -26,9 +26,9 @@
   "author": "Ancas Horia",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/ancashoria/graphql-kafka-subscriptions/issues"
+    "url": "https://github.com/fmannhardt/graphql-kafka-subscriptions/issues"
   },
-  "homepage": "https://github.com/ancashoria/graphql-kafka-subscriptions#readme",
+  "homepage": "https://github.com/fmannhardt/graphql-kafka-subscriptions#readme",
   "jest": {
     "roots": [
       "<rootDir>/src/test"

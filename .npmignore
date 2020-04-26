@@ -1,6 +1,3 @@
-src
-node_modules
-typings
-tsconfig.json
-typings.json
-tslint.json
+docker-compose.yml
+Dockerfile
+.github
