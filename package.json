@@ -1,6 +1,6 @@
 {
   "name": "@fmannhardt/graphql-kafka-subscriptions",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Apollo graphql subscription over Kafka protocol",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
