@@ -1,72 +1,102 @@
 require("dotenv").config()
 import { KafkaPubSub } from '../index'
 import * as Logger from 'bunyan';
+import { ifError } from 'assert';
 
-let pubsub: KafkaPubSub
+const kafkaPubSubFactory = (options?) => (): KafkaPubSub =>  
+    new KafkaPubSub({
+        topic: process.env.KAFKA_TOPIC || 'test',
+        host: process.env.KAFKA_HOST || 'localhost',
+        port: process.env.KAFKA_PORT || '9092',
+        logger: Logger.createLogger({
+          name: 'pubsub',
+          stream: process.stdout,
+          level: 'debug'
+        }),
+        globalConfig: {
+          //'debug': 'all',
+          'security.protocol': process.env.KAFKA_SECURITY || 'PLAINTEXT',
+        },
+        ...options
+      })
 
-beforeAll(() => {
-  jest.setTimeout(60000);
-  pubsub = new KafkaPubSub({
-    topic: process.env.KAFKA_TOPIC || 'test',
-    host: process.env.KAFKA_HOST || 'localhost',
-    port: process.env.KAFKA_PORT || '9092',
-    logger: Logger.createLogger({
-      name: 'pubsub',
-      stream: process.stdout,
-      level: 'info'
-    }),
-    useHeaders: false,
-    globalConfig: {
-      //'debug': 'all',
-      'security.protocol': process.env.KAFKA_SECURITY || 'PLAINTEXT',
-    }
-  })
-});
+const testPublishSubscribe = (pubsubFactory: () => KafkaPubSub) =>  
+  async () => {
+    
+    const pubsub = pubsubFactory() 
 
-afterAll(async () => {
-  await pubsub.close()
-});
-
-describe('KafkaPubSub Basic Tests', () => {
-  test('should subscribe and publish messages correctly', async (done) => {
-        
     const inputChannel = 'test-subscribe'
     const inputPayload = {
       id: 'subscribe-value',
     }
     
-    function onMessage(payload) {
-      try {
-        expect(payload).toStrictEqual(inputPayload);
-        done();
-      } catch (error) {
-        done(error);
-      }      
-    }
+    const messagePromise: Promise<number> = new Promise(async (resolve, reject) => {
+      const subscription = await pubsub.subscribe(inputChannel, (payload) => {
+        try {
+          expect(payload).toStrictEqual(inputPayload);
+          resolve(subscription);
+        } catch (error) {
+          reject();
+        }
+      })
+    })
     
-    const subscription = await pubsub.subscribe(inputChannel, onMessage)
     await new Promise(r => setTimeout(r, 5000));
     await pubsub.publish(inputChannel, inputPayload)
-  })
+    await messagePromise
 
-  test('should subscribe correctly using asyncIterator', async () => {
-    
+    console.log("closing")
+
+    await pubsub.close()
+  }
+
+const testAsyncIterate = (pubsubFactory: () => KafkaPubSub) =>  
+  async () => {
+
+    const pubsub = pubsubFactory() 
+      
     const inputChannel = 'test-iterator'
     const iter = pubsub.asyncIterator(inputChannel)
-
-    await new Promise(r => setTimeout(r, 5000));
+    const iter2 = pubsub.asyncIterator(inputChannel)
 
     var i: number;
     const rep = 10;
 
     for (i = 0; i < rep; i++) {
       const inputPayload = { id: "iter-"+i }
-      const promise = iter.next()      
+      
+      const promise = iter.next()
+      const promise2 = iter2.next()
+      
+      if (i === 0) {
+        // wait a bit for the subscription to work Kafka
+        await new Promise(r => setTimeout(r, 5000));
+      }
+      
       await pubsub.publish(inputChannel, inputPayload)
-      expect(await (await promise).value).toStrictEqual({ id: "iter-"+i })
+      
+      expect((await promise).value).toStrictEqual(inputPayload)
+      expect((await promise2).value).toStrictEqual(inputPayload)
     }
 
     await iter.return();
-  })
+    await iter2.return();
 
+    await pubsub.close()
+  }
+
+describe('KafkaPubSub Basic Tests', () => {
+  beforeAll(() => {
+    jest.setTimeout(60000);
+  });
+  test('should subscribe and publish messages correctly', testPublishSubscribe(kafkaPubSubFactory()))
+  test('should subscribe correctly using asyncIterator', testAsyncIterate(kafkaPubSubFactory()))
 })
+
+// describe('KafkaPubSub with Header Tests', () => {
+//   beforeAll(() => {
+//     jest.setTimeout(60000);
+//   });
+//   test('should subscribe and publish messages correctly', testPublishSubscribe(kafkaPubSubFactory({useHeaders:true})))
+//   test('should subscribe correctly using asyncIterator', testAsyncIterate(kafkaPubSubFactory({useHeaders:true})))
+// })
